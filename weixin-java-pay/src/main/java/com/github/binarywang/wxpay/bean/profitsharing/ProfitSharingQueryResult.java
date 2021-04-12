@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.w3c.dom.Document;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -21,7 +22,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @XStreamAlias("xml")
-public class ProfitSharingQueryResult extends BaseWxPayResult {
+public class ProfitSharingQueryResult extends BaseWxPayResult implements Serializable {
   private static final long serialVersionUID = 2548673608075775067L;
   /**
    * 微信订单号
@@ -79,15 +80,15 @@ public class ProfitSharingQueryResult extends BaseWxPayResult {
   }
 
   @Override
-  protected void loadXML(Document d) {
-    transactionId = readXMLString(d, "transaction_id");
-    outOrderNo = readXMLString(d, "out_order_no");
-    orderId = readXMLString(d, "order_id");
-    status = readXMLString(d, "status");
-    closeReason = readXMLString(d, "close_reason");
-    receiversJson = readXMLString(d, "receivers");
-    amount = readXMLInteger(d, "amount");
-    description = readXMLString(d, "description");
+  protected void loadXml(Document d) {
+    transactionId = readXmlString(d, "transaction_id");
+    outOrderNo = readXmlString(d, "out_order_no");
+    orderId = readXmlString(d, "order_id");
+    status = readXmlString(d, "status");
+    closeReason = readXmlString(d, "close_reason");
+    receiversJson = readXmlString(d, "receivers");
+    amount = readXmlInteger(d, "amount");
+    description = readXmlString(d, "description");
   }
 
   @Data

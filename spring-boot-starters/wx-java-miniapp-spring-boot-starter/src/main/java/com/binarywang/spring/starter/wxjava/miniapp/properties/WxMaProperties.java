@@ -1,9 +1,10 @@
 package com.binarywang.spring.starter.wxjava.miniapp.properties;
 
+import com.binarywang.spring.starter.wxjava.miniapp.enums.HttpClientType;
+import com.binarywang.spring.starter.wxjava.miniapp.enums.StorageType;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.io.Serializable;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * 属性配置类.
@@ -42,16 +43,15 @@ public class WxMaProperties {
   /**
    * 存储策略
    */
-  private ConfigStorage configStorage = new ConfigStorage();
+  private final ConfigStorage configStorage = new ConfigStorage();
 
   @Data
-  public static class ConfigStorage implements Serializable {
-    private static final long serialVersionUID = 4815731027000065434L;
+  public static class ConfigStorage {
 
     /**
      * 存储类型.
      */
-    private StorageType type = StorageType.memory;
+    private StorageType type = StorageType.Memory;
 
     /**
      * 指定key前缀.
@@ -61,12 +61,13 @@ public class WxMaProperties {
     /**
      * redis连接配置.
      */
-    private RedisProperties redis;
+    @NestedConfigurationProperty
+    private final RedisProperties redis = new RedisProperties();
 
     /**
      * http客户端类型.
      */
-    private HttpClientType httpClientType = HttpClientType.httpclient;
+    private HttpClientType httpClientType = HttpClientType.HttpClient;
 
     /**
      * http代理主机.
@@ -87,63 +88,6 @@ public class WxMaProperties {
      * http代理密码.
      */
     private String httpProxyPassword;
-
   }
 
-  public enum StorageType {
-    /**
-     * 内存.
-     */
-    memory,
-    /**
-     * redis(JedisClient).
-     */
-    jedis,
-    /**
-     * redis(RedisTemplate).
-     */
-    redistemplate
-  }
-
-  public enum HttpClientType {
-    /**
-     * HttpClient.
-     */
-    httpclient
-  }
-
-  @Data
-  public static class RedisProperties implements Serializable {
-    private static final long serialVersionUID = -5924815351660074401L;
-
-    /**
-     * 主机地址.
-     */
-    private String host;
-
-    /**
-     * 端口号.
-     */
-    private int port = 6379;
-
-    /**
-     * 密码.
-     */
-    private String password;
-
-    /**
-     * 超时.
-     */
-    private int timeout = 2000;
-
-    /**
-     * 数据库.
-     */
-    private int database = 0;
-
-    private Integer maxActive;
-    private Integer maxIdle;
-    private Integer maxWaitMillis;
-    private Integer minIdle;
-  }
 }

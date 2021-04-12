@@ -1,13 +1,15 @@
 package com.binarywang.spring.starter.wxjava.mp.properties;
 
+import com.binarywang.spring.starter.wxjava.mp.enums.HttpClientType;
+import com.binarywang.spring.starter.wxjava.mp.enums.StorageType;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.io.Serializable;
 
+import static com.binarywang.spring.starter.wxjava.mp.enums.StorageType.Memory;
 import static com.binarywang.spring.starter.wxjava.mp.properties.WxMpProperties.PREFIX;
-import static com.binarywang.spring.starter.wxjava.mp.properties.WxMpProperties.StorageType.memory;
-
 
 /**
  * 微信接入相关配置属性.
@@ -40,9 +42,14 @@ public class WxMpProperties {
   private String aesKey;
 
   /**
+   * 自定义host配置
+   */
+  private HostConfig hosts;
+
+  /**
    * 存储策略
    */
-  private ConfigStorage configStorage = new ConfigStorage();
+  private final ConfigStorage configStorage = new ConfigStorage();
 
   @Data
   public static class ConfigStorage implements Serializable {
@@ -51,7 +58,7 @@ public class WxMpProperties {
     /**
      * 存储类型.
      */
-    private StorageType type = memory;
+    private StorageType type = Memory;
 
     /**
      * 指定key前缀.
@@ -61,12 +68,13 @@ public class WxMpProperties {
     /**
      * redis连接配置.
      */
-    private RedisProperties redis = new RedisProperties();
+    @NestedConfigurationProperty
+    private final RedisProperties redis = new RedisProperties();
 
     /**
      * http客户端类型.
      */
-    private HttpClientType httpClientType = HttpClientType.httpclient;
+    private HttpClientType httpClientType = HttpClientType.HttpClient;
 
     /**
      * http代理主机.
@@ -88,75 +96,6 @@ public class WxMpProperties {
      */
     private String httpProxyPassword;
 
-  }
-
-  public enum StorageType {
-    /**
-     * 内存.
-     */
-    memory,
-    /**
-     * jedis.
-     */
-    redis,
-    /**
-     * redis(JedisClient).
-     */
-    jedis,
-    /**
-     * redis(RedisTemplate).
-     */
-    redistemplate
-  }
-
-  public enum HttpClientType {
-    /**
-     * HttpClient.
-     */
-    httpclient,
-    /**
-     * OkHttp.
-     */
-    okhttp,
-    /**
-     * JoddHttp.
-     */
-    joddhttp
-  }
-
-  @Data
-  public static class RedisProperties implements Serializable {
-    private static final long serialVersionUID = -5924815351660074401L;
-
-    /**
-     * 主机地址.
-     */
-    private String host = "127.0.0.1";
-
-    /**
-     * 端口号.
-     */
-    private int port = 6379;
-
-    /**
-     * 密码.
-     */
-    private String password;
-
-    /**
-     * 超时.
-     */
-    private int timeout = 2000;
-
-    /**
-     * 数据库.
-     */
-    private int database = 0;
-
-    private Integer maxActive;
-    private Integer maxIdle;
-    private Integer maxWaitMillis;
-    private Integer minIdle;
   }
 
 }

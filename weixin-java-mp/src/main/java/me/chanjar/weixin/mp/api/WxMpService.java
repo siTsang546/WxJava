@@ -1,19 +1,21 @@
 package me.chanjar.weixin.mp.api;
 
+import com.google.gson.JsonObject;
+import me.chanjar.weixin.common.service.WxImgProcService;
+import me.chanjar.weixin.common.service.WxOcrService;
 import me.chanjar.weixin.common.bean.WxJsapiSignature;
 import me.chanjar.weixin.common.bean.WxNetCheckResult;
+import me.chanjar.weixin.common.enums.TicketType;
 import me.chanjar.weixin.common.error.WxErrorException;
+import me.chanjar.weixin.common.service.WxOAuth2Service;
 import me.chanjar.weixin.common.service.WxService;
 import me.chanjar.weixin.common.util.http.MediaUploadRequestExecutor;
 import me.chanjar.weixin.common.util.http.RequestExecutor;
 import me.chanjar.weixin.common.util.http.RequestHttp;
 import me.chanjar.weixin.mp.bean.WxMpSemanticQuery;
 import me.chanjar.weixin.mp.bean.result.WxMpCurrentAutoReplyInfo;
-import me.chanjar.weixin.mp.bean.result.WxMpOAuth2AccessToken;
 import me.chanjar.weixin.mp.bean.result.WxMpSemanticQueryResult;
-import me.chanjar.weixin.mp.bean.result.WxMpUser;
 import me.chanjar.weixin.mp.config.WxMpConfigStorage;
-import me.chanjar.weixin.common.enums.TicketType;
 import me.chanjar.weixin.mp.enums.WxMpApiUrl;
 
 import java.util.Map;
@@ -30,19 +32,19 @@ public interface WxMpService extends WxService {
    * 详情请见: http://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421135319&token=&lang=zh_CN
    * </pre>
    *
+   * @param timestamp 时间戳
    * @param nonce     随机串
    * @param signature 签名
-   * @param timestamp 时间戳
-   * @return 是否验证通过
+   * @return 是否验证通过 boolean
    */
   boolean checkSignature(String timestamp, String nonce, String signature);
 
   /**
    * 获取access_token, 不强制刷新access_token.
    *
-   * @return token
+   * @return token access token
    * @throws WxErrorException .
-   * @see #getAccessToken(boolean)
+   * @see #getAccessToken(boolean) #getAccessToken(boolean)
    */
   String getAccessToken() throws WxErrorException;
 
@@ -59,7 +61,7 @@ public interface WxMpService extends WxService {
    * </pre>
    *
    * @param forceRefresh 是否强制刷新
-   * @return token
+   * @return token access token
    * @throws WxErrorException .
    */
   String getAccessToken(boolean forceRefresh) throws WxErrorException;
@@ -68,9 +70,9 @@ public interface WxMpService extends WxService {
    * 获得ticket,不强制刷新ticket.
    *
    * @param type ticket 类型
-   * @return ticket
+   * @return ticket ticket
    * @throws WxErrorException .
-   * @see #getTicket(TicketType, boolean)
+   * @see #getTicket(TicketType, boolean) #getTicket(TicketType, boolean)
    */
   String getTicket(TicketType type) throws WxErrorException;
 
@@ -80,9 +82,9 @@ public interface WxMpService extends WxService {
    * 获得时会检查 Token是否过期，如果过期了，那么就刷新一下，否则就什么都不干
    * </pre>
    *
-   * @param forceRefresh 强制刷新
    * @param type         ticket类型
-   * @return ticket
+   * @param forceRefresh 强制刷新
+   * @return ticket ticket
    * @throws WxErrorException .
    */
   String getTicket(TicketType type, boolean forceRefresh) throws WxErrorException;
@@ -92,7 +94,7 @@ public interface WxMpService extends WxService {
    *
    * @return jsapi ticket
    * @throws WxErrorException .
-   * @see #getJsapiTicket(boolean)
+   * @see #getJsapiTicket(boolean) #getJsapiTicket(boolean)
    */
   String getJsapiTicket() throws WxErrorException;
 
@@ -118,7 +120,7 @@ public interface WxMpService extends WxService {
    * </pre>
    *
    * @param url 地址
-   * @return 生成的签名对象
+   * @return 生成的签名对象 wx jsapi signature
    * @throws WxErrorException .
    */
   WxJsapiSignature createJsapiSignature(String url) throws WxErrorException;
@@ -130,9 +132,10 @@ public interface WxMpService extends WxService {
    * </pre>
    *
    * @param longUrl 长url
-   * @return 生成的短地址
+   * @return 生成的短地址 string
    * @throws WxErrorException .
    */
+  @Deprecated
   String shortUrl(String longUrl) throws WxErrorException;
 
   /**
@@ -142,7 +145,7 @@ public interface WxMpService extends WxService {
    * </pre>
    *
    * @param semanticQuery 查询条件
-   * @return 查询结果
+   * @return 查询结果 wx mp semantic query result
    * @throws WxErrorException .
    */
   WxMpSemanticQueryResult semanticQuery(WxMpSemanticQuery semanticQuery) throws WxErrorException;
@@ -154,70 +157,12 @@ public interface WxMpService extends WxService {
    * URL格式为：https://open.weixin.qq.com/connect/qrconnect?appid=APPID&redirect_uri=REDIRECT_URI&response_type=code&scope=SCOPE&state=STATE#wechat_redirect
    * </pre>
    *
-   * @param redirectURI 用户授权完成后的重定向链接，无需urlencode, 方法内会进行encode
+   * @param redirectUri 用户授权完成后的重定向链接，无需urlencode, 方法内会进行encode
    * @param scope       应用授权作用域，拥有多个作用域用逗号（,）分隔，网页应用目前仅填写snsapi_login即可
    * @param state       非必填，用于保持请求和回调的状态，授权请求后原样带回给第三方。该参数可用于防止csrf攻击（跨站请求伪造攻击），建议第三方带上该参数，可设置为简单的随机数加session进行校验
-   * @return url
+   * @return url string
    */
-  String buildQrConnectUrl(String redirectURI, String scope, String state);
-
-  /**
-   * <pre>
-   * 构造oauth2授权的url连接.
-   * 详情请见: http://mp.weixin.qq.com/wiki/index.php?title=网页授权获取用户基本信息
-   * </pre>
-   *
-   * @param redirectURI 用户授权完成后的重定向链接，无需urlencode, 方法内会进行encode
-   * @param scope       scope
-   * @param state       state
-   * @return url
-   */
-  String oauth2buildAuthorizationUrl(String redirectURI, String scope, String state);
-
-  /**
-   * <pre>
-   * 用code换取oauth2的access token.
-   * 详情请见: http://mp.weixin.qq.com/wiki/index.php?title=网页授权获取用户基本信息
-   * </pre>
-   *
-   * @param code code
-   * @return token对象
-   * @throws WxErrorException .
-   */
-  WxMpOAuth2AccessToken oauth2getAccessToken(String code) throws WxErrorException;
-
-  /**
-   * <pre>
-   * 刷新oauth2的access token.
-   * </pre>
-   *
-   * @param refreshToken 刷新token
-   * @return 新的token对象
-   * @throws WxErrorException .
-   */
-  WxMpOAuth2AccessToken oauth2refreshAccessToken(String refreshToken) throws WxErrorException;
-
-  /**
-   * <pre>
-   * 用oauth2获取用户信息, 当前面引导授权时的scope是snsapi_userinfo的时候才可以.
-   * </pre>
-   *
-   * @param oAuth2AccessToken token对象
-   * @param lang              zh_CN, zh_TW, en
-   * @return 用户对象
-   * @throws WxErrorException .
-   */
-  WxMpUser oauth2getUserInfo(WxMpOAuth2AccessToken oAuth2AccessToken, String lang) throws WxErrorException;
-
-  /**
-   * <pre>
-   * 验证oauth2的access token是否有效.
-   * </pre>
-   *
-   * @param oAuth2AccessToken token对象
-   * @return 是否有效
-   */
-  boolean oauth2validateAccessToken(WxMpOAuth2AccessToken oAuth2AccessToken);
+  String buildQrConnectUrl(String redirectUri, String scope, String state);
 
   /**
    * <pre>
@@ -225,7 +170,7 @@ public interface WxMpService extends WxService {
    * http://mp.weixin.qq.com/wiki/0/2ad4b6bfd29f30f71d39616c2a0fcedc.html
    * </pre>
    *
-   * @return 微信服务器ip地址数组
+   * @return 微信服务器ip地址数组 string [ ]
    * @throws WxErrorException .
    */
   String[] getCallbackIP() throws WxErrorException;
@@ -239,7 +184,7 @@ public interface WxMpService extends WxService {
    *
    * @param action   执行的检测动作
    * @param operator 指定平台从某个运营商进行检测
-   * @return 检测结果
+   * @return 检测结果 wx net check result
    * @throws WxErrorException .
    */
   WxNetCheckResult netCheck(String action, String operator) throws WxErrorException;
@@ -260,7 +205,7 @@ public interface WxMpService extends WxService {
    * https://api.weixin.qq.com/cgi-bin/get_current_autoreply_info?access_token=ACCESS_TOKEN
    * </pre>
    *
-   * @return 公众号的自动回复规则
+   * @return 公众号的自动回复规则 current auto reply info
    * @throws WxErrorException .
    */
   WxMpCurrentAutoReplyInfo getCurrentAutoReplyInfo() throws WxErrorException;
@@ -274,6 +219,7 @@ public interface WxMpService extends WxService {
    * </pre>
    *
    * @param appid 公众号的APPID
+   * @throws WxErrorException the wx error exception
    */
   void clearQuota(String appid) throws WxErrorException;
 
@@ -284,10 +230,12 @@ public interface WxMpService extends WxService {
    * 可以参考，{@link MediaUploadRequestExecutor}的实现方法
    * </pre>
    *
-   * @param data     参数数据
+   * @param <T>      the type parameter
+   * @param <E>      the type parameter
    * @param executor 执行器
    * @param url      接口地址
-   * @return 结果
+   * @param data     参数数据
+   * @return 结果 t
    * @throws WxErrorException 异常
    */
   <T, E> T execute(RequestExecutor<T, E> executor, String url, E data) throws WxErrorException;
@@ -295,9 +243,9 @@ public interface WxMpService extends WxService {
   /**
    * 当本Service没有实现某个API的时候，可以用这个，针对所有微信API中的GET请求.
    *
-   * @param queryParam 参数
    * @param url        请求接口地址
-   * @return 接口响应字符串
+   * @param queryParam 参数
+   * @return 接口响应字符串 string
    * @throws WxErrorException 异常
    */
   String get(WxMpApiUrl url, String queryParam) throws WxErrorException;
@@ -305,12 +253,32 @@ public interface WxMpService extends WxService {
   /**
    * 当本Service没有实现某个API的时候，可以用这个，针对所有微信API中的POST请求.
    *
-   * @param postData 请求参数json值
    * @param url      请求接口地址
-   * @return 接口响应字符串
+   * @param postData 请求参数json值
+   * @return 接口响应字符串 string
    * @throws WxErrorException 异常
    */
   String post(WxMpApiUrl url, String postData) throws WxErrorException;
+
+  /**
+   * 当本Service没有实现某个API的时候，可以用这个，针对所有微信API中的POST请求.
+   *
+   * @param url      请求接口地址
+   * @param obj 请求参数
+   * @return 接口响应字符串 string
+   * @throws WxErrorException 异常
+   */
+  String post(WxMpApiUrl url, Object obj) throws WxErrorException;
+
+  /**
+   * 当本Service没有实现某个API的时候，可以用这个，针对所有微信API中的POST请求.
+   *
+   * @param url        请求接口地址
+   * @param jsonObject 请求参数json对象
+   * @return 接口响应字符串 string
+   * @throws WxErrorException 异常
+   */
+  String post(WxMpApiUrl url, JsonObject jsonObject) throws WxErrorException;
 
   /**
    * <pre>
@@ -319,10 +287,12 @@ public interface WxMpService extends WxService {
    * 可以参考，{@link MediaUploadRequestExecutor}的实现方法
    * </pre>
    *
-   * @param data     参数数据
+   * @param <T>      the type parameter
+   * @param <E>      the type parameter
    * @param executor 执行器
    * @param url      接口地址
-   * @return 结果
+   * @param data     参数数据
+   * @return 结果 t
    * @throws WxErrorException 异常
    */
   <T, E> T execute(RequestExecutor<T, E> executor, WxMpApiUrl url, E data) throws WxErrorException;
@@ -347,7 +317,7 @@ public interface WxMpService extends WxService {
   /**
    * 获取WxMpConfigStorage 对象.
    *
-   * @return WxMpConfigStorage
+   * @return WxMpConfigStorage wx mp config storage
    */
   WxMpConfigStorage getWxMpConfigStorage();
 
@@ -393,7 +363,7 @@ public interface WxMpService extends WxService {
    * 进行相应的公众号切换.
    *
    * @param mpId 公众号标识
-   * @return 切换是否成功
+   * @return 切换是否成功 boolean
    */
   boolean switchover(String mpId);
 
@@ -401,119 +371,119 @@ public interface WxMpService extends WxService {
    * 进行相应的公众号切换.
    *
    * @param mpId 公众号标识
-   * @return 切换成功，则返回当前对象，方便链式调用，否则抛出异常
+   * @return 切换成功 ，则返回当前对象，方便链式调用，否则抛出异常
    */
   WxMpService switchoverTo(String mpId);
 
   /**
    * 返回客服接口方法实现类，以方便调用其各个接口.
    *
-   * @return WxMpKefuService
+   * @return WxMpKefuService kefu service
    */
   WxMpKefuService getKefuService();
 
   /**
    * 返回素材相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpMaterialService
+   * @return WxMpMaterialService material service
    */
   WxMpMaterialService getMaterialService();
 
   /**
    * 返回菜单相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpMenuService
+   * @return WxMpMenuService menu service
    */
   WxMpMenuService getMenuService();
 
   /**
    * 返回用户相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpUserService
+   * @return WxMpUserService user service
    */
   WxMpUserService getUserService();
 
   /**
    * 返回用户标签相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpUserTagService
+   * @return WxMpUserTagService user tag service
    */
   WxMpUserTagService getUserTagService();
 
   /**
    * 返回二维码相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpQrcodeService
+   * @return WxMpQrcodeService qrcode service
    */
   WxMpQrcodeService getQrcodeService();
 
   /**
    * 返回卡券相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpCardService
+   * @return WxMpCardService card service
    */
   WxMpCardService getCardService();
 
   /**
    * 返回数据分析统计相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpDataCubeService
+   * @return WxMpDataCubeService data cube service
    */
   WxMpDataCubeService getDataCubeService();
 
   /**
    * 返回用户黑名单管理相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpUserBlacklistService
+   * @return WxMpUserBlacklistService black list service
    */
   WxMpUserBlacklistService getBlackListService();
 
   /**
    * 返回门店管理相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpStoreService
+   * @return WxMpStoreService store service
    */
   WxMpStoreService getStoreService();
 
   /**
    * 返回模板消息相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpTemplateMsgService
+   * @return WxMpTemplateMsgService template msg service
    */
   WxMpTemplateMsgService getTemplateMsgService();
 
   /**
    * 返回一次性订阅消息相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpSubscribeMsgService
+   * @return WxMpSubscribeMsgService subscribe msg service
    */
   WxMpSubscribeMsgService getSubscribeMsgService();
 
   /**
    * 返回硬件平台相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpDeviceService
+   * @return WxMpDeviceService device service
    */
   WxMpDeviceService getDeviceService();
 
   /**
    * 返回摇一摇周边相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpShakeService
+   * @return WxMpShakeService shake service
    */
   WxMpShakeService getShakeService();
 
   /**
    * 返回会员卡相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpMemberCardService
+   * @return WxMpMemberCardService member card service
    */
   WxMpMemberCardService getMemberCardService();
 
   /**
    * 返回营销相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpMarketingService
+   * @return WxMpMarketingService marketing service
    */
   WxMpMarketingService getMarketingService();
 
@@ -525,44 +495,56 @@ public interface WxMpService extends WxService {
   /**
    * 获取RequestHttp对象.
    *
-   * @return RequestHttp对象
+   * @return RequestHttp对象 request http
    */
   RequestHttp getRequestHttp();
 
   /**
    * 返回群发消息相关接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpMassMessageService
+   * @return WxMpMassMessageService mass message service
    */
   WxMpMassMessageService getMassMessageService();
 
   /**
    * 返回AI开放接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpAiOpenService
+   * @return WxMpAiOpenService ai open service
    */
   WxMpAiOpenService getAiOpenService();
 
   /**
    * 返回WIFI接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpWifiService
+   * @return WxMpWifiService wifi service
    */
   WxMpWifiService getWifiService();
 
   /**
    * 返回WIFI接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpWifiService
+   * @return WxMpWifiService ocr service
    */
-  WxMpOcrService getOcrService();
+  WxOcrService getOcrService();
 
   /**
    * 返回图像处理接口的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpImgProcService
+   * @return WxImgProcService img proc service
    */
-  WxMpImgProcService getImgProcService();
+  WxImgProcService getImgProcService();
+
+  /**
+   * 返回电子发票报销方相关接口
+   * @return WxMpReimburseInvoiceService
+   */
+  WxMpReimburseInvoiceService getReimburseInvoiceService();
+
+  /**
+   * .
+   * @param reimburseInvoiceService .
+   */
+  void setReimburseInvoiceService(WxMpReimburseInvoiceService reimburseInvoiceService);
 
   /**
    * .
@@ -595,16 +577,16 @@ public interface WxMpService extends WxService {
   /**
    * .
    *
-   * @param tagService .
+   * @param userTagService .
    */
-  void setTagService(WxMpUserTagService tagService);
+  void setUserTagService(WxMpUserTagService userTagService);
 
   /**
    * .
    *
-   * @param qrCodeService .
+   * @param qrcodeService .
    */
-  void setQrCodeService(WxMpQrcodeService qrCodeService);
+  void setQrcodeService(WxMpQrcodeService qrcodeService);
 
   /**
    * .
@@ -688,19 +670,19 @@ public interface WxMpService extends WxService {
    *
    * @param ocrService .
    */
-  void setOcrService(WxMpOcrService ocrService);
+  void setOcrService(WxOcrService ocrService);
 
   /**
    * .
    *
    * @param imgProcService .
    */
-  void setImgProcService(WxMpImgProcService imgProcService);
+  void setImgProcService(WxImgProcService imgProcService);
 
   /**
    * 返回评论数据管理接口方法的实现类对象，以方便调用其各个接口.
    *
-   * @return WxMpWifiService
+   * @return WxMpWifiService comment service
    */
   WxMpCommentService getCommentService();
 
@@ -710,4 +692,32 @@ public interface WxMpService extends WxService {
    * @param commentService .
    */
   void setCommentService(WxMpCommentService commentService);
+
+  /**
+   * Gets oauth2 service.
+   *
+   * @return the oauth2 service
+   */
+  WxOAuth2Service getOAuth2Service();
+
+  /**
+   * Sets oauth2Service.
+   *
+   * @param oAuth2Service the o auth 2 service
+   */
+  void setOAuth2Service(WxOAuth2Service oAuth2Service);
+
+  /**
+   * Gets guide service.
+   *
+   * @return the guide service
+   */
+  WxMpGuideService getGuideService();
+
+  /**
+   * Sets guide service.
+   *
+   * @param guideService the guide service
+   */
+  void setGuideService(WxMpGuideService guideService);
 }
